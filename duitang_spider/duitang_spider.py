@@ -8,8 +8,9 @@ import time
 
 thread_lock =threading.BoundedSemaphore(value=10)#设置最大线程锁
 
-SEARCH_BASE_URL = 'https://www.duitang.com/napi/blog/list/by_search/?kw=%E6%A0%A1%E8%8A%B1&&start=0&limit=1000'
-CATACORY_BASE_URL = ''
+SEARCH_BASE_URL = 'https://www.duitang.com/napi/blog/list/by_search/?kw={}&type=feed&include_fields=top_comments%2Cis_root%2Csource_link%2Citem%2Cbuyable%2Croot_id%2Cstatus%2Clike_count%2Clike_id%2Csender%2Calbum%2Creply_count%2Cfavorite_blog_id&_type=&start={}&_={}&limit=1000'
+
+CATEGORY_BASE_URL = 'https://www.duitang.com/napi/blog/list/by_filter_id/?include_fields=top_comments%2Cis_root%2Csource_link%2Citem%2Cbuyable%2Croot_id%2Cstatus%2Clike_count%2Csender%2Calbum%2Creply_count&filter_id={}&start={}&_={}&limit=1000'
 
 def get_page(url):  #通过URL获取数据
     page = requests.get(url)
@@ -19,9 +20,9 @@ def get_page(url):  #通过URL获取数据
 #print(get_page('https://www.duitang.com/napi/blog/list/by_search/?kw=%E6%A0%A1%E8%8A%B1&&start=0&limit=1000'))
 #36
 #label:校花
-def pages_from_catagory(label, nums, tag=None):  #获取其他页面链接
+def pages_from_search(label, nums, tag=None):  #获取其他页面链接
     pages = []
-    url='https://www.duitang.com/napi/blog/list/by_filter_id/?include_fields=top_comments%2Cis_root%2Csource_link%2Citem%2Cbuyable%2Croot_id%2Cstatus%2Clike_count%2Csender%2Calbum%2Creply_count&filter_id={}&start={}&_={}&limit=1000'
+    url = SEARCH_BASE_URL
     if tag is None:
         label=urllib.parse.quote(label) #将中文转成url编码
     else:
@@ -29,7 +30,23 @@ def pages_from_catagory(label, nums, tag=None):  #获取其他页面链接
 
     for index in range(0,int(nums),100):
         u = url.format(label, index, str(time.time()).replace('.','')[:14])
-        print(u)
+        # print(u)
+        page = get_page(u)
+        pages.append(page)
+    return pages
+
+
+def pages_from_catagory(label, nums, tag=None):  #获取其他页面链接
+    pages = []
+    url = CATEGORY_BASE_URL
+    if tag is None:
+        label=urllib.parse.quote(label) #将中文转成url编码
+    else:
+        label=urllib.parse.quote(label)+"_"+ urllib.parse.quote(tag)
+
+    for index in range(0,int(nums),100):
+        u = url.format(label, index, str(time.time()).replace('.','')[:14])
+        # print(u)
         page = get_page(u)
         pages.append(page)
     return pages
@@ -100,7 +117,6 @@ def main(argv):
         tag = args.tag
         output = args.output
         
-        print(nums, tag, output)
         if not search_key is None:
             main_(search_key,nums,tag, output, 'search')
         else:
